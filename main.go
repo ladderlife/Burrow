@@ -42,9 +42,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/viper"
-
 	"github.com/linkedin/Burrow/core"
+	"github.com/spf13/viper"
 )
 
 // exitCode wraps a return value for the application
@@ -78,7 +77,7 @@ func main() {
 	// Load the configuration from the file
 	viper.SetConfigName("burrow")
 	viper.AddConfigPath(*configPath)
-	fmt.Fprintln(os.Stderr, "Reading configuration from", *configPath)
+	fmt.Fprintln(os.Stderr, "Reading configuration from CANARY", *configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed reading configuration:", err.Error())

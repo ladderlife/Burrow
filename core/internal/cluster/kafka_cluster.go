@@ -15,11 +15,10 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
-
 	"github.com/linkedin/Burrow/core/internal/helpers"
 	"github.com/linkedin/Burrow/core/protocol"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // KafkaCluster is a cluster module which connects to a single Apache Kafka cluster and manages the broker topic and
@@ -53,7 +52,7 @@ type KafkaCluster struct {
 // Kafka cluster, of the form host:port. Default values will be set for the intervals to use for refreshing offsets
 // (10 seconds) and topics (60 seconds). A missing, or bad, list of servers will cause this func to panic.
 func (module *KafkaCluster) Configure(name string, configRoot string) {
-	module.Log.Info("configuring")
+	module.Log.Info("configuring HELLO WORLD")
 
 	module.name = name
 	module.quitChannel = make(chan struct{})
@@ -79,7 +78,7 @@ func (module *KafkaCluster) Configure(name string, configRoot string) {
 // Start connects to the Kafka cluster using the Shopify/sarama client. Any error connecting to the cluster is returned
 // to the caller. Once the client is set up, tickers are started to periodically refresh topics and offsets.
 func (module *KafkaCluster) Start() error {
-	module.Log.Info("starting")
+	module.Log.Info("starting HELLO WORLD")
 
 	// Connect Kafka client
 	client, err := sarama.NewClient(module.servers, module.saramaConfig)
@@ -88,17 +87,26 @@ func (module *KafkaCluster) Start() error {
 		return err
 	}
 
+	module.Log.Info("starting2")
+
 	// Fire off the offset requests once, before we start the ticker, to make sure we start with good data for consumers
 	helperClient := &helpers.BurrowSaramaClient{
 		Client: client,
 	}
+
+	module.Log.Info("starting3")
+
 	module.fetchMetadata = true
 	module.getOffsets(helperClient)
+	module.Log.Info("starting4")
 
 	// Start main loop that has a timer for offset and topic fetches
 	module.offsetTicker = time.NewTicker(time.Duration(module.offsetRefresh) * time.Second)
 	module.metadataTicker = time.NewTicker(time.Duration(module.topicRefresh) * time.Second)
+	module.Log.Info("starting5")
+
 	go module.mainLoop(helperClient)
+	module.Log.Info("starting6")
 
 	return nil
 }
@@ -134,6 +142,8 @@ func (module *KafkaCluster) mainLoop(client helpers.SaramaClient) {
 
 func (module *KafkaCluster) maybeUpdateMetadataAndDeleteTopics(client helpers.SaramaClient) {
 	if module.fetchMetadata {
+		module.Log.Info("fetching metadata...")
+
 		module.fetchMetadata = false
 		client.RefreshMetadata()
 
@@ -144,6 +154,8 @@ func (module *KafkaCluster) maybeUpdateMetadataAndDeleteTopics(client helpers.Sa
 			return
 		}
 
+		module.Log.Info("found topics", zap.Strings("topics", topicList))
+
 		// We'll use topicPartitions later
 		topicPartitions := make(map[string][]int32)
 		for _, topic := range topicList {
@@ -152,6 +164,8 @@ func (module *KafkaCluster) maybeUpdateMetadataAndDeleteTopics(client helpers.Sa
 				module.Log.Error("failed to fetch partition list", zap.String("sarama_error", err.Error()))
 				return
 			}
+
+			module.Log.Info("found topic", zap.String("topic", topic), zap.Int32("partitions", len(partitions)))
 
 			topicPartitions[topic] = make([]int32, 0, len(partitions))
 			for _, partitionID := range partitions {
@@ -184,6 +198,8 @@ func (module *KafkaCluster) maybeUpdateMetadataAndDeleteTopics(client helpers.Sa
 
 		// Save the new topicPartitions for next time
 		module.topicPartitions = topicPartitions
+	} else {
+		module.Log.Info("Not fetching metadata...")
 	}
 }
 
